@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Redeem App - Referral Program</title>
+  <style>
+    :root {
+      --bg:#f7fbff; --card:#fff; --accent:#2563eb; --muted:#6b7280;
+      --success:#16a34a; --radius:12px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+    }
+    body {
+      margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);
+      padding:24px;
+    }
+    .card {
+      background:var(--card); width:100%; max-width:680px; border-radius:var(--radius);
+      box-shadow:0 8px 30px rgba(2,6,23,0.08); padding:22px; box-sizing:border-box;
+    }
+    h1{margin:0 0 8px;font-size:22px;color:#0f172a;}
+    p{margin:0 0 14px;color:var(--muted);}
+    label{display:block;font-size:14px;margin-top:12px;color:#0f172a;}
+    input {
+      width:100%; padding:10px; font-size:14px; border-radius:8px;
+      border:1px solid rgba(2,6,23,0.1); margin-top:6px; box-sizing:border-box;
+    }
+    button {
+      margin-top:18px; padding:10px 14px; border:0; border-radius:10px;
+      background:var(--accent); color:#fff; font-weight:600; cursor:pointer;
+      width:100%;
+    }
+    .hidden {display:none;}
+    .ref-section {
+      text-align:center; padding:10px 0;
+    }
+    .ref-code {
+      font-family:monospace; font-size:20px; padding:8px 14px; border-radius:8px;
+      background:#f3f8ff; display:inline-block; color:var(--accent);
+      border:1px dashed rgba(37,99,235,0.2);
+    }
+    .controls{margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .controls button{
+      width:auto;padding:8px 12px;font-size:14px;
+    }
+    .small{font-size:13px;color:var(--muted);}
+    .qr{width:180px;height:180px;margin-top:10px;border-radius:10px;}
+    .toast{
+      position:fixed;bottom:20px;right:20px;background:var(--success);color:#fff;
+      padding:10px 14px;border-radius:10px;display:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="formPage">
+      <h1>Redeem App Referral Program</h1>
+      <p>Enter your details to get your referral code and start earning ₹10 rewards!</p>
+
+      <form id="userForm">
+        <label for="name">Your Name</label>
+        <input type="text" id="name" required placeholder="Enter your name" />
+
+        <label for="email">Email Address</label>
+        <input type="email" id="email" required placeholder="Enter your email" />
+
+        <label for="refInput">Referral Code (optional)</label>
+        <input type="text" id="refInput" placeholder="If you were invited, enter code" />
+
+        <button type="submit">Generate My Referral Code</button>
+      </form>
+    </div>
+
+    <div id="referralPage" class="hidden">
+      <h1>Welcome to Redeem App 🎉</h1>
+      <p>You’ll earn <strong>₹10</strong> for every <strong>3 friends</strong> you invite!</p>
+
+      <div class="ref-section">
+        <div>Your Referral Code:</div>
+        <div class="ref-code" id="refCode">---</div>
+        <div class="small" style="margin-top:4px;">Share this code or link below</div>
+        <div id="refLink" class="small" style="word-break:break-all;margin-top:4px;"></div>
+        <img id="qrImg" class="qr" alt="QR Code" />
+      </div>
+
+      <div class="controls">
+        <button id="copyCode">Copy Code</button>
+        <button id="copyLink">Copy Link</button>
+        <button id="shareBtn">Share</button>
+      </div>
+
+      <p class="small" style="margin-top:10px;">Invite 3 friends → Get ₹10 instantly!</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    const form = document.getElementById('userForm');
+    const formPage = document.getElementById('formPage');
+    const referralPage = document.getElementById('referralPage');
+    const refCodeEl = document.getElementById('refCode');
+    const refLinkEl = document.getElementById('refLink');
+    const qrImgEl = document.getElementById('qrImg');
+    const toast = document.getElementById('toast');
+
+    const BASE_URL = "https://redeem.app/invite";
+
+    function randomCode() {
+      return "RD" + Math.random().toString(36).substring(2,8).toUpperCase();
+    }
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.style.display = "block";
+      setTimeout(()=>toast.style.display="none",2000);
+    }
+
+    async function copyText(text){
+      await navigator.clipboard.writeText(text);
+      showToast("Copied!");
+    }
+
+    form.addEventListener('submit', e=>{
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const refInput = document.getElementById('refInput').value.trim();
+
+      // generate code unique per user (simplified)
+      const myCode = randomCode();
+      const refLink = `${BASE_URL}?ref=${myCode}`;
+
+      // show next page
+      refCodeEl.textContent = myCode;
+      refLinkEl.textContent = refLink;
+      refLinkEl.innerHTML = `<a href="${refLink}" target="_blank">${refLink}</a>`;
+      qrImgEl.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(refLink);
+
+      formPage.classList.add('hidden');
+      referralPage.classList.remove('hidden');
+
+      // log optional referral use
+      if(refInput){
+        console.log(`${name} joined with referral code ${refInput}`);
+      }
+    });
+
+    document.getElementById('copyCode').addEventListener('click',()=>{
+      copyText(refCodeEl.textContent);
+    });
+
+    document.getElementById('copyLink').addEventListener('click',()=>{
+      copyText(refLinkEl.textContent);
+    });
+
+    document.getElementById('shareBtn').addEventListener('click',()=>{
+      const link = refLinkEl.textContent;
+      const text = `Join Redeem App using my referral code ${refCodeEl.textContent} and get ₹10 bonus after 3 invites! ${link}`;
+      if(navigator.share){
+        navigator.share({title:"Redeem App Invite", text, url:link});
+      } else {
+        copyText(text);
+        showToast("Copied message to share!");
+      }
+    });
+  </script>
+</body>
+</html>
